@@ -27,12 +27,27 @@ async function run() {
     // await client.connect();
     
 const campCollection= client.db("SummerCampDB").collection('topClass');
+const instractoreCollection= client.db("SummerCampDB").collection('instractore');
+const cartsCollection= client.db("SummerCampDB").collection('carts');
 
+// class
     app.get('/topClass', async(req, res) =>{
         const result = await campCollection.find().toArray();
         res.send(result);
     })
 
+    // instractore
+    app.get('/instractore', async(req, res) =>{
+      const result = await instractoreCollection.find().toArray();
+      res.send(result);
+  })
+
+  // cart collection 
+  app.post('/carts', async(req, res) =>{
+    const menu = req.body;
+    const result = await cartsCollection.insertOne(menu);
+    res.send(result);
+  })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
