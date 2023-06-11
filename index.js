@@ -26,9 +26,18 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     
+const usersCollection= client.db("SummerCampDB").collection('users');
 const campCollection= client.db("SummerCampDB").collection('topClass');
 const instractoreCollection= client.db("SummerCampDB").collection('instractore');
 const cartsCollection= client.db("SummerCampDB").collection('carts');
+
+// user related api 
+app.post('/users', async(req, res) =>{
+  const user = req.body;
+  const result = await usersCollection.insertOne(user);
+  res.send(result);
+})
+
 
 // class
     app.get('/topClass', async(req, res) =>{
