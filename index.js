@@ -226,6 +226,10 @@ app.get('/carts', verifyJWT,async(req, res) =>{
     })
   })
 
+  app.get('/payments', async(req, res)=>{
+    const result = await paymentCollection.find().toArray();
+    res.send(result);
+  })
   
   app.post('/payments', verifyJWT, async(req, res) =>{
     const payment = req.body;
@@ -246,6 +250,8 @@ app.get('/carts', verifyJWT,async(req, res) =>{
     const revenue = payment.reduce((sum, payment) => sum + payment.price, 0)
     res.send({revenue, users, topClass, orders});
   })
+
+
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
