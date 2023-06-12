@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const app = express();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const port = process.env.PORT || 5000;
 
 // middleware 
@@ -47,7 +48,8 @@ async function run() {
 const usersCollection= client.db("SummerCampDB").collection('users');
 const campCollection= client.db("SummerCampDB").collection('topClass');
 const instractoreCollection= client.db("SummerCampDB").collection('instractore');
-const cartsCollection= client.db("SummerCampDB").collection('carts');
+const cartCollection= client.db("SummerCampDB").collection('carts');
+const paymentCollection= client.db("SummerCampDB").collection('payments');
 
 app.post('/jwt', (req, res) =>{
   const user = req.body;
@@ -165,6 +167,13 @@ app.delete('/users/admin/:id', async(req, res) =>{
       res.send(result);
     })
 
+    app.delete('/topClass/:id', verifyJWT, verifyAdmin, async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await campCollection.deleteOne(query);
+      res.send(result);
+    })
+
     // instractore
     app.get('/instractore', async(req, res) =>{
       const result = await instractoreCollection.find().toArray();
@@ -184,21 +193,48 @@ app.get('/carts', verifyJWT,async(req, res) =>{
   }
 
   const query = {email: email};
-  const result = await cartsCollection.find(query).toArray();
+  const result = await cartCollection.find(query).toArray();
   res.send(result);
 })
 
   app.post('/carts', async(req, res) =>{
     const menu = req.body;
-    const result = await cartsCollection.insertOne(menu);
+    const result = await cartCollection.insertOne(menu);
     res.send(result);
   })
 
   app.delete('/carts/:id', async(req, res) =>{
     const id = req.params.id;
     const query = {_id: new ObjectId(id)};
-    const result = await cartsCollection.deleteOne(query);
+    const result = await cartCollection.deleteOne(query);
     res.send(result);
+  })
+
+
+  // payment 
+  app.post('/create-payment-intent', verifyJWT, async (req, res)=> {
+    const {price} =req.body;
+    const amount = parseInt(price * 100);
+    console.log(price, amount)
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount,
+      currency: 'usd',
+      payment_method_types: ['card']
+    });
+    res.send({
+      clientSecret: paymentIntent.client_secret
+    })
+  })
+
+  
+  app.post('/payments', verifyJWT, async(req, res) =>{
+    const payment = req.body;
+    const insertResult = await paymentCollection.insertOne(payment);
+
+    const query = {_id: {$in: payment.cartItems.map(id => new ObjectId(id))}}
+    const deleteResult = await cartCollection.deleteMany(query)
+
+    res.send({insertResult, deleteResult});
   })
     
     await client.db("admin").command({ ping: 1 });
