@@ -169,7 +169,7 @@ app.delete('/users/admin/:id', async(req, res) =>{
 
     app.delete('/topClass/:id', verifyJWT, verifyAdmin, async(req, res) =>{
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = {_id: id};
       const result = await campCollection.deleteOne(query);
       res.send(result);
     })
@@ -236,11 +236,19 @@ app.get('/carts', verifyJWT,async(req, res) =>{
 
     res.send({insertResult, deleteResult});
   })
-    
+
+
+  app.get('/admin-stats', verifyJWT, verifyAdmin, async(req, res)=>{
+    const users = await usersCollection.estimatedDocumentCount();
+    const topClass = await campCollection.estimatedDocumentCount();
+    const orders = await paymentCollection.estimatedDocumentCount();
+    const payment = await paymentCollection.find().toArray();
+    const revenue = payment.reduce((sum, payment) => sum + payment.price, 0)
+    res.send({revenue, users, topClass, orders});
+  })
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
-
   }
 }
 run().catch(console.dir);
